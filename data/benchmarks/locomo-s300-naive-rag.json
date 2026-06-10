@@ -1,0 +1,33 @@
+{
+ "bench": "locomo",
+ "track": "main",
+ "tool": "naive-rag",
+ "sample": "locomo-s300-seed42",
+ "run_dir": "results/locomo-naive-rag-1781051902",
+ "answer_model": "openrouter:anthropic/claude-sonnet-4.6",
+ "judge": {
+  "transport": "openrouter",
+  "model": "anthropic/claude-opus-4.8"
+ },
+ "graded": 8,
+ "deterministic": 4,
+ "llm_judged": 4,
+ "answerable_accuracy": 0.25,
+ "abstention_accuracy": null,
+ "overall": 0.25,
+ "by_category": {
+  "1": {
+   "n": 6,
+   "accuracy": 0.3333
+  },
+  "2": {
+   "n": 2,
+   "accuracy": 0.0
+  }
+ },
+ "failure_modes": {
+  "missing_recall": 4,
+  "wrong_fact": 1,
+  "partial": 1
+ }
+}

@@ -1,24 +1,24 @@
 {
  "bench": "locomo",
  "track": "open",
- "tool": "plainfile",
+ "tool": "naive-rag",
  "sample": "locomo-s300-seed42",
- "run_dir": "results/locomo-plainfile-open-1781056739",
+ "run_dir": "results/locomo-naive-rag-open-1781065514",
  "answer_model": "ollama-cloud:deepseek-v4-pro",
  "judge": {
   "transport": "ollama-cloud",
   "model": "qwen3.5:397b"
  },
  "graded": 300,
- "deterministic": 233,
- "llm_judged": 67,
- "answerable_accuracy": 0.2489,
- "abstention_accuracy": 0.9104,
- "overall": 0.3967,
+ "deterministic": 224,
+ "llm_judged": 76,
+ "answerable_accuracy": 0.3004,
+ "abstention_accuracy": 0.8955,
+ "overall": 0.4333,
  "by_category": {
   "1": {
    "n": 43,
-   "accuracy": 0.093
+   "accuracy": 0.1395
   },
   "2": {
    "n": 48,
@@ -26,22 +26,22 @@
   },
   "3": {
    "n": 15,
-   "accuracy": 0.1333
+   "accuracy": 0.2
   },
   "4": {
    "n": 127,
-   "accuracy": 0.4094
+   "accuracy": 0.4803
   },
   "5": {
    "n": 67,
-   "accuracy": 0.9104
+   "accuracy": 0.8955
   }
  },
  "failure_modes": {
-  "missing_recall": 126,
-  "none": 42,
-  "wrong_abstention": 6,
-  "wrong_fact": 4,
-  "partial": 3
+  "missing_recall": 108,
+  "none": 38,
+  "partial": 10,
+  "wrong_fact": 7,
+  "wrong_abstention": 7
  }
 }

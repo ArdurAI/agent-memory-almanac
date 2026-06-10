@@ -1,8 +1,9 @@
 {
  "bench": "locomo",
- "sample": "locomo-s300-seed42",
+ "track": "main",
  "tool": "no-memory",
- "date": "2026-06-09",
+ "sample": "locomo-s300-seed42",
+ "run_dir": "results/locomo-no-memory-1781054889",
  "answer_model": "openrouter:anthropic/claude-sonnet-4.6",
  "judge": {
   "transport": "openrouter",
@@ -11,6 +12,8 @@
  "graded": 300,
  "deterministic": 300,
  "llm_judged": 0,
+ "answerable_accuracy": 0.0,
+ "abstention_accuracy": 1.0,
  "overall": 0.2233,
  "by_category": {
   "1": {
