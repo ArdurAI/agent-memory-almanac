@@ -20,6 +20,7 @@ landscape shifts, and (as they land) independent benchmark results from the
 | Everything we know about one tool | [`tools/<name>.md`](tools/) |
 | Machine-readable roster + metadata | [`data/`](data/) |
 | Architecture diagrams + latency charts | [`architecture.md`](architecture.md) |
+| Benchmark results (rolling) | [`benchmarks/`](benchmarks/) |
 | How tools are tested and ranked | [Methodology](#methodology) below |
 
 ## The roster
