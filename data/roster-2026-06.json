@@ -1,0 +1,28 @@
+{
+  "captured_at": "2026-06-09",
+  "tiers": {
+    "A": ["mem0","letta","graphiti","cognee","honcho","memobase","langmem","hindsight","memvid","memos","memori"],
+    "B": ["basic-memory","openmemory","mcp-knowledge-graph","claude-mem"],
+    "C": ["obsidian","plainfile","naive-rag","full-context","no-memory"]
+  },
+  "tools": {
+    "mem0": {"repo": "mem0ai/mem0", "stars": 58186, "license": "Apache-2.0", "pushed_at": "2026-06-09"},
+    "letta": {"repo": "letta-ai/letta", "stars": 23224, "license": "Apache-2.0", "pushed_at": "2026-05-14"},
+    "graphiti": {"repo": "getzep/graphiti", "stars": 27220, "license": "Apache-2.0", "pushed_at": "2026-06-09"},
+    "cognee": {"repo": "topoteretes/cognee", "stars": 17743, "license": "Apache-2.0", "pushed_at": "2026-06-09"},
+    "honcho": {"repo": "plastic-labs/honcho", "stars": 4995, "license": "AGPL-3.0", "pushed_at": "2026-06-09", "disclosure": "ArdurAI contributes"},
+    "memobase": {"repo": "memodb-io/memobase", "stars": 2748, "license": "Apache-2.0", "pushed_at": "2026-01-11", "flags": ["freshness-watch"]},
+    "langmem": {"repo": "langchain-ai/langmem", "stars": 1496, "license": "MIT", "pushed_at": "2026-06-07"},
+    "hindsight": {"repo": "vectorize-io/hindsight", "stars": 16076, "license": "MIT", "pushed_at": "2026-06-09"},
+    "memvid": {"repo": "memvid/memvid", "stars": 15635, "license": "Apache-2.0", "pushed_at": "2026-05-27"},
+    "memos": {"repo": "MemTensor/MemOS", "stars": 9689, "license": "Apache-2.0", "pushed_at": "2026-06-09"},
+    "memori": {"repo": "MemoriLabs/Memori", "stars": 15231, "license": "Apache-2.0 (nonstandard filename)", "pushed_at": "2026-06-09"},
+    "basic-memory": {"repo": "basicmachines-co/basic-memory", "stars": 3173, "license": "AGPL-3.0", "pushed_at": "2026-06-08"},
+    "openmemory": {"repo": "CaviraOSS/OpenMemory", "stars": 4211, "license": "Apache-2.0", "pushed_at": "2026-05-29"},
+    "mcp-knowledge-graph": {"repo": "shaneholloman/mcp-knowledge-graph", "stars": 864, "license": "MIT", "pushed_at": "2026-05-29"},
+    "claude-mem": {"repo": "thedotmack/claude-mem", "stars": 81466, "license": "Apache-2.0", "pushed_at": "2026-06-09"}
+  },
+  "notes": {
+    "zep": "getzep/zep CE retired upstream; Graphiti is the Zep-family OSS entry"
+  }
+}
