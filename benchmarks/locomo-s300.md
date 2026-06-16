@@ -44,10 +44,10 @@ or at ~0 answerable, is doing nothing.
 | Tool | Tier | Answerable | Abstention | Overall | Status |
 |------|------|-----------|------------|---------|--------|
 | no-memory | C (canary) | 0.000 | 1.000 | 0.223 | ✅ 2026-06-09 |
-| plainfile | C | | | | running |
-| obsidian | C | | | | queued |
+| plainfile | C | | | | paused at 213/300 (provider limit) |
+| obsidian | C | | | | paused (provider limit) |
 | naive-rag | C | | | | queued |
-| full-context | C (ceiling) | | | | running |
+| full-context | C (ceiling) | | | | paused at 145/300 (provider limit) |
 | basic-memory | B | | | | queued |
 | openmemory | B | | | | queued |
 | mcp-knowledge-graph | B | | | | queued |
