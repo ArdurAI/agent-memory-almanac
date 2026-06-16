@@ -58,3 +58,47 @@ or at ~0 answerable, is doing nothing.
 *Answer/judge transports for these runs: OpenRouter (Anthropic-native batch
 grading pending a key; transport is stamped in every run's metadata per the
 methodology).*
+
+---
+
+## Open-model track (D8) — same pipeline, open models end-to-end
+
+While the main track's provider quota resets, the same s300 benchmark runs as
+a **separate series** on open models: answerer `deepseek-v4-pro`, judge
+`qwen3.5:397b` (deliberately different families to avoid same-family grading
+bias), both via Ollama Cloud. Open-track runs are tagged and stamped in
+metadata; they are never merged or compared head-to-head with main-track rows
+— the answerer differs, so the tables differ.
+
+The open track ran its own canary first: no-memory scored 0.000 answerable /
+1.000 abstention — same leak-free profile as the main track.
+
+| Tool | Tier | Answerable (cat 1–4) | Abstention | Overall | Status |
+|------|------|---------------------|------------|---------|--------|
+| no-memory (canary) | C | 0.000 | 1.000 | 0.223 | ✅ |
+| plainfile | C | 0.249 | 0.910 | 0.397 | ✅ |
+| obsidian | C | **0.309** | 0.896 | **0.440** | ✅ |
+| naive-rag | C | | | | running |
+| basic-memory · openmemory · mcp-knowledge-graph · memori · memvid · full-context | B/A/C | | | | queued |
+
+Per-category (answerable) so far:
+
+| Tool | multi-hop | temporal | open-domain | single-hop |
+|------|-----------|----------|-------------|------------|
+| plainfile | 0.093 | **0.000** | 0.133 | 0.409 |
+| obsidian | 0.023 | **0.375** | 0.133 | 0.402 |
+
+### Finding: timestamp visibility is worth ~37 temporal points by itself
+
+plainfile and obsidian use the same naive keyword search — yet obsidian scores
+0.375 on temporal questions where plainfile scores 0.000. The only difference:
+obsidian's notes inline each turn's timestamp into the retrieved text, so the
+answering model can see dates and resolve "when did X happen." plainfile keeps
+timestamps in metadata the answerer never receives.
+
+If you build or operate agent memory: **putting timestamps inside the
+retrieved text is the cheapest temporal-reasoning upgrade available** — no
+graph, no extraction, no LLM in the write path. We record this as a finding
+rather than retro-tuning the adapters; the series stays internally consistent.
+
+Raw run summaries: [`data/benchmarks/`](../data/benchmarks/).

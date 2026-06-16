@@ -1,0 +1,46 @@
+{
+ "bench": "locomo",
+ "track": "open",
+ "sample": "locomo-s300-seed42",
+ "tool": "plainfile",
+ "date": "2026-06-10",
+ "answer_model": "ollama-cloud:deepseek-v4-pro",
+ "judge": {
+  "transport": "ollama-cloud",
+  "model": "qwen3.5:397b"
+ },
+ "graded": 300,
+ "deterministic": 233,
+ "llm_judged": 67,
+ "answerable_accuracy": 0.2489,
+ "overall": 0.3967,
+ "by_category": {
+  "1": {
+   "n": 43,
+   "accuracy": 0.093
+  },
+  "2": {
+   "n": 48,
+   "accuracy": 0.0
+  },
+  "3": {
+   "n": 15,
+   "accuracy": 0.1333
+  },
+  "4": {
+   "n": 127,
+   "accuracy": 0.4094
+  },
+  "5": {
+   "n": 67,
+   "accuracy": 0.9104
+  }
+ },
+ "failure_modes": {
+  "missing_recall": 126,
+  "none": 42,
+  "wrong_abstention": 6,
+  "wrong_fact": 4,
+  "partial": 3
+ }
+}
