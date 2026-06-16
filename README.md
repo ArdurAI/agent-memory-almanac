@@ -21,7 +21,9 @@ landscape shifts, and (as they land) independent benchmark results from the
 | Machine-readable roster + metadata | [`data/`](data/) |
 | Architecture diagrams + latency charts | [`architecture.md`](architecture.md) |
 | Benchmark results (rolling) | [`benchmarks/`](benchmarks/) |
-| How tools are tested and ranked | [Methodology](#methodology) below |
+| How tools are tested and ranked | [`methodology.md`](methodology.md) |
+| Vendor claims vs. independent reproduction | [`published-vs-reproduced.md`](published-vs-reproduced.md) |
+| The benchmark harness code | [`harness/`](harness/) |
 
 ## The roster
 
@@ -38,7 +40,7 @@ on cost. A memory tool that can't do both has no reason to exist.
 
 ## Methodology
 
-Results published here come from a frozen-before-results harness:
+Results published here come from a frozen-before-results harness. Full details in [`methodology.md`](methodology.md):
 
 - Standard benchmarks (LoCoMo, LongMemEval) for comparability with published claims —
   every ranking ships a *published vs. reproduced* table.
@@ -50,8 +52,8 @@ Results published here come from a frozen-before-results harness:
   **ops burden**, developer experience, data sovereignty.
 
 The judge model, prompts (SHA-256-frozen), and control variables were fixed before any
-tool ran. Raw results JSON is published with every ranking. The benchmark harness repo
-goes public alongside the first article of the series.
+tool ran. Raw results JSON is published with every ranking. The benchmark harness is
+open-sourced in [`harness/`](harness/).
 
 ## Update cadence
 
