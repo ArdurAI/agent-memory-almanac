@@ -14,6 +14,7 @@ Failure-mode taxonomy:
 - wrong_abstention: answerer abstained when it should have answered
 - partial: answerer gave a partially correct answer
 - hallucination: answerer invented information not in the source
+- cross_project_leak: retrieved data from a different project (PlatformOps-Mem only)
 - none: answerer gave the correct answer (no failure)
 """
 
@@ -40,7 +41,7 @@ Output format (JSON):
 {
   "correct": true | false,
   "confidence": 0.0 to 1.0,
-  "failure_mode": "missing_recall" | "wrong_fact" | "wrong_abstention" | "partial" | "hallucination" | "none",
+  "failure_mode": "missing_recall" | "wrong_fact" | "wrong_abstention" | "partial" | "hallucination" | "cross_project_leak" | "none",
   "reason": "brief explanation"
 }
 """
@@ -162,19 +163,89 @@ class LLMJudge:
     def grade(self, question: str, gold_answer: str, model_answer: str,
               category: int, pass_number: int = 1) -> GradeResult:
         """
-        Call the LLM judge. In a real run, this calls the transport.
-        For the scaffold, we return a structured placeholder.
+        Call the LLM judge via the configured transport.
+        
+        Parses the model's JSON response into a GradeResult.
+        On transport or parsing failure, returns a conservative incorrect verdict.
         """
-        # TODO: implement actual LLM call via transport
-        # This scaffold returns the structure the real implementation will fill.
-        return GradeResult(
-            correct=False,
-            confidence=0.0,
-            failure_mode="missing_recall",
-            reason="LLM judge scaffold — implement transport call",
-            graded_by="llm_judge" if pass_number == 1 else "llm_judge_second_pass",
-            pass_number=pass_number
-        )
+        from harness.transport import TransportFactory
+
+        try:
+            transport = TransportFactory.for_track(self.transport)
+            messages = self.build_prompt(question, gold_answer, model_answer, category)
+            resp = transport.chat(messages, model=self.model, temperature=0.0, max_tokens=512)
+
+            if resp.error:
+                return GradeResult(
+                    correct=False,
+                    confidence=0.0,
+                    failure_mode="missing_recall",
+                    reason=f"LLM judge transport error: {resp.error}",
+                    graded_by="llm_judge" if pass_number == 1 else "llm_judge_second_pass",
+                    pass_number=pass_number
+                )
+
+            # Parse JSON from the response text
+            parsed = self._parse_judge_output(resp.text)
+            return GradeResult(
+                correct=parsed.get("correct", False),
+                confidence=parsed.get("confidence", 0.0),
+                failure_mode=parsed.get("failure_mode", "missing_recall"),
+                reason=parsed.get("reason", "No reason provided"),
+                graded_by="llm_judge" if pass_number == 1 else "llm_judge_second_pass",
+                pass_number=pass_number
+            )
+
+        except Exception as e:
+            return GradeResult(
+                correct=False,
+                confidence=0.0,
+                failure_mode="missing_recall",
+                reason=f"LLM judge exception: {str(e)}",
+                graded_by="llm_judge" if pass_number == 1 else "llm_judge_second_pass",
+                pass_number=pass_number
+            )
+
+    def _parse_judge_output(self, text: str) -> dict:
+        """
+        Extract and parse JSON from the judge's response text.
+        
+        Handles:
+        - Clean JSON output
+        - JSON embedded in markdown code blocks
+        - JSON with trailing text
+        - Malformed JSON (returns conservative defaults)
+        """
+        # Try to extract JSON from markdown code block
+        code_block = re.search(r'```json\s*(\{.*?\})\s*```', text, re.DOTALL)
+        if code_block:
+            text = code_block.group(1)
+        else:
+            # Try to find the first JSON object
+            match = re.search(r'\{.*\}', text, re.DOTALL)
+            if match:
+                text = match.group(0)
+
+        try:
+            parsed = json.loads(text)
+            # Validate required fields
+            if "correct" not in parsed:
+                parsed["correct"] = False
+            if "confidence" not in parsed:
+                parsed["confidence"] = 0.0
+            if "failure_mode" not in parsed:
+                parsed["failure_mode"] = "missing_recall"
+            if "reason" not in parsed:
+                parsed["reason"] = "No reason provided"
+            return parsed
+        except json.JSONDecodeError:
+            # Conservative fallback
+            return {
+                "correct": False,
+                "confidence": 0.0,
+                "failure_mode": "missing_recall",
+                "reason": f"Failed to parse judge JSON: {text[:200]}"
+            }
 
     def build_prompt(self, question: str, gold_answer: str, model_answer: str,
                      category: int) -> list[dict]:

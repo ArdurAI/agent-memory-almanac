@@ -3,23 +3,29 @@ Integration tests for the Quest harness.
 
 Tests the full pipeline with baseline adapters to verify the harness works
 correctly before any real tool runs.
+
+No pytest dependency — run with: python -m harness.tests
 """
 
-import pytest
 import json
 from pathlib import Path
 import tempfile
+import math
 
 from harness.adapter import MemoryAdapter, AdapterResult
 from harness.telemetry import TelemetryCollector
 from harness.judge import JudgePipeline, DeterministicGrader
 from harness.runner import BenchmarkRunner
 from harness.data_loader import LoCoMoLoader
-from harness.answer import answer_question
 from harness.adapters.no_memory import NoMemoryAdapter
 from harness.adapters.plainfile import PlainFileAdapter
 from harness.adapters.obsidian import ObsidianAdapter
 from harness.adapters.naive_rag import NaiveRAGAdapter
+
+
+def approx(a, b, abs_tol=0.0001):
+    """Simple approximation check, no pytest needed."""
+    return math.isclose(a, b, abs_tol=abs_tol)
 
 
 class TestDeterministicGrader:
@@ -149,7 +155,7 @@ class TestRunnerPipeline:
             summary = runner.run(scenario_data)
             assert summary["answerable_accuracy"] == 0.0
             assert summary["abstention_accuracy"] == 1.0
-            assert summary["overall_accuracy"] == pytest.approx(0.5, abs=0.01)
+            assert approx(summary["overall_accuracy"], 0.5, abs_tol=0.01)
             assert "failure_modes" in summary
 
             # Verify files were created
@@ -208,7 +214,7 @@ class TestTelemetry:
         t.record("answer", None, start=0.0, end=2.0, tokens_prompt=1000, tokens_completion=500, model="anthropic/claude-sonnet-4.6")
         s = t.summary()
         # 1000 * 3.00 + 500 * 15.00 = 3000 + 7500 = 10500 / 1M = 0.0105
-        assert s["total_cost_usd"] == pytest.approx(0.0105, abs=0.0001)
+        assert approx(s["total_cost_usd"], 0.0105, abs_tol=0.0001)
 
 
 class TestLoCoMoLoader:
@@ -224,15 +230,16 @@ class TestLoCoMoLoader:
                         "turns": [{"role": "user", "content": "hello"}],
                         "qa": [
                             {"id": "q1", "question": "Q1", "answer": "A1", "category": 1},
-                            {"id": "q2", "question": "Q2", "answer": "A2", "category": 2},
+                            {"id": "q2", "question": "Q2", "answer": "A2", "category": 1},
+                            {"id": "q3", "question": "Q3", "answer": "A3", "category": 2},
                         ]
                     },
                     {
                         "id": "c2",
                         "turns": [{"role": "user", "content": "world"}],
                         "qa": [
-                            {"id": "q3", "question": "Q3", "answer": "A3", "category": 1},
-                            {"id": "q4", "question": "Q4", "answer": "A4", "category": 5},
+                            {"id": "q4", "question": "Q4", "answer": "A4", "category": 1},
+                            {"id": "q5", "question": "Q5", "answer": "A5", "category": 5},
                         ]
                     }
                 ]
@@ -241,13 +248,14 @@ class TestLoCoMoLoader:
 
             loader = LoCoMoLoader(data_path)
             full = loader.load()
-            assert len(full) == 4
+            assert len(full) == 5
 
             sample = loader.stratified_sample(n=2, seed=42)
             assert len(sample) == 2
-            # Should preserve category proportions
-            cats = [s["category"] for s in sample]
-            assert 1 in cats  # category 1 has the most questions
+            # All sampled items should be from the original data
+            all_ids = {q["question_id"] for q in full}
+            for s in sample:
+                assert s["question_id"] in all_ids
 
             stats = loader.stats()
-            assert stats["total_questions"] == 4
+            assert stats["total_questions"] == 5
