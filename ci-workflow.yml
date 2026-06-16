@@ -1,0 +1,84 @@
+name: Harness CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r harness/requirements.txt
+
+    - name: Verify imports
+      run: |
+        python -c "
+        import sys; sys.path.insert(0, '.')
+        import harness.adapter, harness.telemetry, harness.judge, harness.runner
+        import harness.transport, harness.answer, harness.data_loader
+        import harness.stress_suite, harness.bench_platformops, harness.bench_locomo
+        import harness.adapters.no_memory, harness.adapters.plainfile
+        import harness.adapters.obsidian, harness.adapters.naive_rag
+        import harness.adapters.basic_memory, harness.adapters.openmemory
+        import harness.adapters.mem0
+        print('All imports OK')
+        "
+
+    - name: Run integration tests
+      run: |
+        python -c "
+        import sys; sys.path.insert(0, '.')
+        import harness.tests as t
+
+        # Grader tests
+        grader = t.TestDeterministicGrader()
+        grader.test_exact_match()
+        grader.test_exact_match_case_insensitive()
+        grader.test_abstention_is_missing_recall()
+        grader.test_adversarial_abstention_correct()
+        grader.test_adversarial_answer_wrong()
+        grader.test_substring_match_short_answer()
+        print('Grader tests: OK')
+
+        # Baseline adapter tests
+        baseline = t.TestBaselineAdapters()
+        baseline.test_no_memory_returns_empty()
+        baseline.test_plainfile_stores_and_retrieves()
+        baseline.test_plainfile_wipe_clears()
+        baseline.test_obsidian_stores_markdown()
+        baseline.test_naive_rag_retrieves()
+        print('Baseline adapter tests: OK')
+
+        # Telemetry tests
+        telem = t.TestTelemetry()
+        telem.test_telemetry_summary()
+        telem.test_telemetry_cost()
+        print('Telemetry tests: OK')
+
+        # Loader tests
+        loader = t.TestLoCoMoLoader()
+        loader.test_load_and_sample()
+        print('Loader tests: OK')
+
+        print('All tests passed.')
+        "
+
+    - name: Check syntax
+      run: |
+        python -m py_compile harness/*.py harness/adapters/*.py

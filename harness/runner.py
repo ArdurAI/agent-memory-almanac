@@ -351,6 +351,15 @@ def _load_adapter(tool_name: str) -> MemoryAdapter:
         "basic-memory": "harness.adapters.basic_memory",
         "openmemory": "harness.adapters.openmemory",
         "mem0": "harness.adapters.mem0",
+        "graphiti": "harness.adapters.graphiti",
+        "cognee": "harness.adapters.cognee",
+        "honcho": "harness.adapters.honcho",
+        "hindsight": "harness.adapters.hindsight",
+        "memvid": "harness.adapters.memvid",
+        "memos": "harness.adapters.memos",
+        "memori": "harness.adapters.memori",
+        "memobase": "harness.adapters.memobase",
+        "langmem": "harness.adapters.langmem",
     }
     if tool_name not in adapters:
         raise ValueError(f"Unknown tool: {tool_name}. Known tools: {list(adapters.keys())}")
