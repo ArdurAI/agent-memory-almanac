@@ -17,7 +17,6 @@ Every run produces a timestamped result directory with:
 import argparse
 import json
 import time
-import hashlib
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -33,7 +32,8 @@ class BenchmarkRunner:
     """Orchestrates a single benchmark run from start to finish."""
 
     def __init__(self, benchmark: str, tool: str, track: str, results_dir: Path,
-                 adapter: MemoryAdapter, judge: JudgePipeline, answer_model: str):
+                 adapter: MemoryAdapter, judge: JudgePipeline, answer_model: str,
+                 dry_run: bool = False):
         self.benchmark = benchmark
         self.tool = tool
         self.track = track
@@ -41,137 +41,35 @@ class BenchmarkRunner:
         self.adapter = adapter
         self.judge = judge
         self.answer_model = answer_model
+        self.dry_run = dry_run
         self.run_timestamp = int(time.time())
         self.run_id = f"{benchmark}-{tool}-{track}-{self.run_timestamp}"
         self.telemetry = TelemetryCollector(self.run_id)
 
-        # Create result directory
         self.run_dir = results_dir / self.run_id
         self.run_dir.mkdir(parents=True, exist_ok=False)
 
     def run(self, scenario_data: list[dict]) -> dict:
-        """
-        Run the full benchmark pipeline.
-
-        scenario_data: list of question dicts, each with:
-            - question_id
-            - question
-            - gold_answer
-            - category (1-5 for LoCoMo)
-            - conversation_turns (for ingestion)
-        """
-        # --- Phase 1: Setup ---
+        """Run the full LoCoMo-style benchmark pipeline."""
         self.adapter.setup()
 
-        # --- Phase 2: Ingestion ---
-        # Group turns by conversation and feed to adapter
+        # Ingestion
         for conv in self._group_by_conversation(scenario_data):
             self.adapter.add(conv["turns"])
-
-        # Wait for async ingestion
         ingest_result = self.adapter.await_ingest()
 
-        # --- Phase 3: Retrieval + Answering ---
+        # Retrieval + Answering + Grading
         per_question_records = []
         for item in scenario_data:
-            # Retrieve context
-            excerpts = self.adapter.search(item["question"])
-
-            # Answer (placeholder — real implementation calls the answering model)
-            model_answer = self._answer(item["question"], excerpts)
-
-            # Grade
-            grade = self.judge.grade(
-                question=item["question"],
-                gold_answer=item["gold_answer"],
-                model_answer=model_answer,
-                category=item.get("category", 1)
-            )
-
-            per_question_records.append({
-                "question_id": item["question_id"],
-                "question": item["question"],
-                "gold_answer": item["gold_answer"],
-                "model_answer": model_answer,
-                "excerpts": excerpts,
-                "category": item.get("category", 1),
-                "grade": {
-                    "correct": grade.correct,
-                    "confidence": grade.confidence,
-                    "failure_mode": grade.failure_mode,
-                    "reason": grade.reason,
-                    "graded_by": grade.graded_by,
-                    "pass_number": grade.pass_number,
-                }
-            })
-
-        # --- Phase 4: Export + Wipe ---
-        adapter_state = self.adapter.export()
-        self.adapter.wipe()
-
-        # --- Phase 5: Aggregate + Save ---
-        run_summary = self._aggregate(per_question_records)
-        run_summary["run_id"] = self.run_id
-        run_summary["benchmark"] = self.benchmark
-        run_summary["tool"] = self.tool
-        run_summary["track"] = self.track
-        run_summary["run_timestamp"] = self.run_timestamp
-        run_summary["run_timestamp_iso"] = datetime.now(timezone.utc).isoformat()
-        run_summary["adapter_ingest_time_sec"] = ingest_result.elapsed_sec if ingest_result else 0.0
-
-        # Save files
-        (self.run_dir / "run.json").write_text(json.dumps(run_summary, indent=2))
-        with (self.run_dir / "per_question.jsonl").open("w") as f:
-            for rec in per_question_records:
-                f.write(json.dumps(rec) + "\n")
-        self.telemetry.save(self.run_dir / "telemetry.json")
-        (self.run_dir / "adapter_state.json").write_text(json.dumps(adapter_state, indent=2))
-
-        return run_summary
-
-    def run(self, scenario_data: list[dict]) -> dict:
-        """
-        Run the full benchmark pipeline.
-
-        scenario_data: list of question dicts, each with:
-            - question_id
-            - question
-            - gold_answer
-            - category (1-5 for LoCoMo)
-            - conversation_turns (for ingestion)
-        """
-        # --- Phase 1: Setup ---
-        self.adapter.setup()
-
-        # --- Phase 2: Ingestion ---
-        # Group turns by conversation and feed to adapter
-        for conv in self._group_by_conversation(scenario_data):
-            self.adapter.add(conv["turns"])
-
-        # Wait for async ingestion
-        ingest_result = self.adapter.await_ingest()
-
-        # --- Phase 3: Retrieval + Answering ---
-        per_question_records = []
-        for item in scenario_data:
-            # Retrieve context
             search_result = self.adapter.search(item["question"])
             excerpts = search_result.metadata.get("excerpts", []) if search_result else []
-
-            # Answer via the frozen answering model
-            model_answer = self._answer(
-                item["question"],
-                excerpts,
-            )
-
-            # Grade
+            model_answer = self._answer(item["question"], excerpts)
             grade = self.judge.grade(
                 question=item["question"],
                 gold_answer=item["gold_answer"],
                 model_answer=model_answer,
                 category=item.get("category", 1)
             )
-
             per_question_records.append({
                 "question_id": item["question_id"],
                 "question": item["question"],
@@ -189,11 +87,12 @@ class BenchmarkRunner:
                 }
             })
 
-        # --- Phase 4: Export + Wipe ---
-        adapter_state = self.adapter.export()
+        # Export + Wipe
+        adapter_state_result = self.adapter.export()
+        adapter_state = adapter_state_result.metadata if adapter_state_result else {}
         self.adapter.wipe()
 
-        # --- Phase 5: Aggregate + Save ---
+        # Aggregate + Save
         run_summary = self._aggregate(per_question_records)
         run_summary["run_id"] = self.run_id
         run_summary["benchmark"] = self.benchmark
@@ -204,7 +103,6 @@ class BenchmarkRunner:
         run_summary["adapter_ingest_time_sec"] = ingest_result.elapsed_sec if ingest_result else 0.0
         run_summary["answer_model"] = self.answer_model
 
-        # Save files
         (self.run_dir / "run.json").write_text(json.dumps(run_summary, indent=2))
         with (self.run_dir / "per_question.jsonl").open("w") as f:
             for rec in per_question_records:
@@ -214,33 +112,96 @@ class BenchmarkRunner:
 
         return run_summary
 
+    def run_stress(self, scenarios: list[str]) -> dict:
+        """Run the stress suite for a single tool."""
+        from harness.stress_suite import run_stress_suite
+
+        self.adapter.setup()
+        results = run_stress_suite(self.adapter, scenarios=scenarios)
+        self.adapter.wipe()
+
+        summary = {
+            "run_id": self.run_id,
+            "benchmark": self.benchmark,
+            "tool": self.tool,
+            "track": self.track,
+            "run_timestamp": self.run_timestamp,
+            "run_timestamp_iso": datetime.now(timezone.utc).isoformat(),
+            "scenarios": [r.scenario for r in results],
+            "passed": sum(1 for r in results if r.passed),
+            "failed": sum(1 for r in results if not r.passed),
+            "total": len(results),
+            "detailed_results": [
+                {
+                    "scenario": r.scenario,
+                    "passed": r.passed,
+                    "verdict": r.verdict,
+                    "failure_modes": r.failure_modes,
+                    "latency_sec": r.latency_sec,
+                    "metrics": r.metrics,
+                }
+                for r in results
+            ],
+        }
+
+        (self.run_dir / "run.json").write_text(json.dumps(summary, indent=2))
+        self.telemetry.save(self.run_dir / "telemetry.json")
+        return summary
+
+    def run_platformops(self) -> dict:
+        """Run the PlatformOps-Mem benchmark for a single tool."""
+        from harness.bench_platformops import PlatformOpsBenchmark
+
+        benchmark = PlatformOpsBenchmark(self.adapter, self.judge)
+        all_results = benchmark.run_all()
+
+        summary = {
+            "run_id": self.run_id,
+            "benchmark": self.benchmark,
+            "tool": self.tool,
+            "track": self.track,
+            "run_timestamp": self.run_timestamp,
+            "run_timestamp_iso": datetime.now(timezone.utc).isoformat(),
+            "answer_model": self.answer_model,
+            "total_questions": all_results["total_questions"],
+            "correct": all_results["correct"],
+            "accuracy": all_results["accuracy"],
+            "by_scenario": all_results["by_scenario"],
+            "failure_modes": all_results["failure_modes"],
+            "detailed_results": all_results["detailed_results"],
+        }
+
+        (self.run_dir / "run.json").write_text(json.dumps(summary, indent=2))
+        self.telemetry.save(self.run_dir / "telemetry.json")
+        return summary
+
     def _group_by_conversation(self, scenario_data: list[dict]) -> list[dict]:
-        """Group scenario data by conversation ID for batch ingestion."""
         from collections import defaultdict
-        convs = defaultdict(list)
+        convs = defaultdict(lambda: {"conversation_id": "", "turns": []})
         for item in scenario_data:
             cid = item.get("conversation_id", "default")
-            convs[cid].append(item)
-        return [{"conversation_id": cid, "turns": items} for cid, items in convs.items()]
+            convs[cid]["conversation_id"] = cid
+            if not convs[cid]["turns"]:
+                convs[cid]["turns"] = item.get("turns", [])
+        return list(convs.values())
 
     def _answer(self, question: str, excerpts: list[str]) -> str:
-        """Call the answering model via the transport layer."""
+        if self.dry_run:
+            if excerpts:
+                return excerpts[0]
+            return "I don't know"
         return answer_question(
-            question=question,
-            excerpts=excerpts,
-            model=self.answer_model,
-            track=self.track,
+            question=question, excerpts=excerpts,
+            model=self.answer_model, track=self.track,
             telemetry=self.telemetry,
         )
 
     def _aggregate(self, records: list[dict]) -> dict:
-        """Aggregate per-question grades into run-level scores."""
         total = len(records)
         correct = sum(1 for r in records if r["grade"]["correct"])
         deterministic = sum(1 for r in records if r["grade"]["graded_by"] == "deterministic")
         llm_judged = sum(1 for r in records if "llm_judge" in r["grade"]["graded_by"])
 
-        # By category
         by_category = {}
         for r in records:
             cat = r["category"]
@@ -256,13 +217,11 @@ class BenchmarkRunner:
                 "accuracy": round(stats["correct"] / stats["n"], 4) if stats["n"] > 0 else 0.0
             }
 
-        # Failure modes
         failure_modes = {}
         for r in records:
             fm = r["grade"]["failure_mode"]
             failure_modes[fm] = failure_modes.get(fm, 0) + 1
 
-        # Answerable (categories 1-4) vs abstention (category 5)
         answerable_n = sum(1 for r in records if r["category"] != 5)
         answerable_correct = sum(1 for r in records if r["category"] != 5 and r["grade"]["correct"])
         abstention_n = sum(1 for r in records if r["category"] == 5)
@@ -288,9 +247,12 @@ def main():
     parser.add_argument("--results-dir", default="harness/results", type=Path)
     parser.add_argument("--sample", default="locomo-s300-seed42", help="Sample identifier")
     parser.add_argument("--data-path", default="data/locomo.json", type=Path, help="Path to LoCoMo dataset")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="Run without calling LLM APIs — returns first excerpt as answer")
+    parser.add_argument("--stress-scenarios", default="all",
+                        help="Comma-separated stress scenarios (for --benchmark stress)")
     args = parser.parse_args()
 
-    # Resolve model per track
     answer_model = (
         "anthropic/claude-sonnet-4.6" if args.track == "main"
         else "deepseek-v4-pro"
@@ -300,21 +262,23 @@ def main():
         else "qwen3.5:397b"
     )
 
-    # Load adapter by tool name
     adapter = _load_adapter(args.tool)
     judge = JudgePipeline(judge_model, args.track)
 
     runner = BenchmarkRunner(
-        benchmark=args.benchmark,
-        tool=args.tool,
-        track=args.track,
-        results_dir=args.results_dir,
-        adapter=adapter,
-        judge=judge,
-        answer_model=answer_model,
+        benchmark=args.benchmark, tool=args.tool, track=args.track,
+        results_dir=args.results_dir, adapter=adapter, judge=judge,
+        answer_model=answer_model, dry_run=args.dry_run,
     )
 
-    # Load benchmark data
+    print(f"Running {args.benchmark} / {args.tool} / {args.track}")
+    print(f"Answer model: {answer_model}")
+    print(f"Judge model: {judge_model}")
+    if args.dry_run:
+        print("Mode: DRY RUN (no API calls)")
+    print(f"Results dir: {runner.run_dir}")
+    print()
+
     if args.benchmark == "locomo":
         loader = LoCoMoLoader(args.data_path)
         if args.sample == "locomo-s300-seed42":
@@ -323,26 +287,33 @@ def main():
             scenario_data = loader.load()
         else:
             raise ValueError(f"Unknown sample: {args.sample}")
-    else:
-        raise NotImplementedError(f"Benchmark {args.benchmark} not yet implemented in CLI")
+        print(f"Questions: {len(scenario_data)}")
+        summary = runner.run(scenario_data)
+        print(f"\nOverall: {summary['overall_accuracy']}")
+        print(f"Answerable: {summary['answerable_accuracy']}")
+        print(f"Abstention: {summary['abstention_accuracy']}")
 
-    print(f"Running {args.benchmark} / {args.tool} / {args.track} / {args.sample}")
-    print(f"Answer model: {answer_model}")
-    print(f"Judge model: {judge_model}")
-    print(f"Questions: {len(scenario_data)}")
-    print(f"Results dir: {runner.run_dir}")
-    print()
+    elif args.benchmark == "stress":
+        if args.stress_scenarios == "all":
+            scenarios = None
+        else:
+            scenarios = [s.strip() for s in args.stress_scenarios.split(",")]
+        summary = runner.run_stress(scenarios)
+        print(f"\nPassed: {summary['passed']} / {summary['total']}")
+        for r in summary["detailed_results"]:
+            status = "PASS" if r["passed"] else "FAIL"
+            print(f"  [{status}] {r['scenario']}: {r['verdict']}")
 
-    summary = runner.run(scenario_data)
-    print(f"\nRun complete: {summary['run_id']}")
-    print(f"Overall accuracy: {summary['overall_accuracy']}")
-    print(f"Answerable accuracy: {summary['answerable_accuracy']}")
-    print(f"Abstention accuracy: {summary['abstention_accuracy']}")
-    print(f"Results: {runner.run_dir}")
+    elif args.benchmark == "platformops":
+        summary = runner.run_platformops()
+        print(f"\nAccuracy: {summary['accuracy']}")
+        for scenario, stats in summary["by_scenario"].items():
+            print(f"  {scenario}: {stats['accuracy']} ({stats['total']} questions)")
+
+    print(f"\nResults: {runner.run_dir}")
 
 
 def _load_adapter(tool_name: str) -> MemoryAdapter:
-    """Load an adapter by tool name."""
     adapters = {
         "no-memory": "harness.adapters.no_memory",
         "plainfile": "harness.adapters.plainfile",
@@ -363,10 +334,8 @@ def _load_adapter(tool_name: str) -> MemoryAdapter:
     }
     if tool_name not in adapters:
         raise ValueError(f"Unknown tool: {tool_name}. Known tools: {list(adapters.keys())}")
-    
     import importlib
     module = importlib.import_module(adapters[tool_name])
-    # Each adapter module exports a class with the same name + "Adapter"
     class_name = "".join(part.capitalize() for part in tool_name.replace("-", "_").split("_")) + "Adapter"
     return getattr(module, class_name)()
 

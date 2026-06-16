@@ -1,6 +1,6 @@
 # Agent Memory Almanac — Makefile
 
-.PHONY: help test imports run-canary run-plainfile run-basic run-mem0 lint clean
+.PHONY: help test imports run-canary run-canary-dry run-plainfile run-plainfile-dry run-basic run-mem0 lint clean
 
 PYTHON ?= python3
 REPO_ROOT := $(shell pwd)
@@ -47,8 +47,29 @@ imports: ## Verify all harness modules import cleanly
 	@echo "import harness.adapters.obsidian, harness.adapters.naive_rag" >> $(REPO_ROOT)/tmp/import_test.py
 	@echo "import harness.adapters.basic_memory, harness.adapters.openmemory" >> $(REPO_ROOT)/tmp/import_test.py
 	@echo "import harness.adapters.mem0" >> $(REPO_ROOT)/tmp/import_test.py
+	@echo "import harness.adapters.graphiti" >> $(REPO_ROOT)/tmp/import_test.py
+	@echo "import harness.adapters.cognee" >> $(REPO_ROOT)/tmp/import_test.py
+	@echo "import harness.adapters.honcho" >> $(REPO_ROOT)/tmp/import_test.py
+	@echo "import harness.adapters.hindsight" >> $(REPO_ROOT)/tmp/import_test.py
+	@echo "import harness.adapters.memvid" >> $(REPO_ROOT)/tmp/import_test.py
+	@echo "import harness.adapters.memos" >> $(REPO_ROOT)/tmp/import_test.py
+	@echo "import harness.adapters.memori" >> $(REPO_ROOT)/tmp/import_test.py
+	@echo "import harness.adapters.memobase" >> $(REPO_ROOT)/tmp/import_test.py
+	@echo "import harness.adapters.langmem" >> $(REPO_ROOT)/tmp/import_test.py
 	@echo "print('All imports OK')" >> $(REPO_ROOT)/tmp/import_test.py
 	@cd $(REPO_ROOT) && $(PYTHON) tmp/import_test.py
+
+run-canary-dry: ## Run the no-memory canary in dry-run mode (no API calls)
+	@echo "Running no-memory canary (dry-run)..."
+	cd $(REPO_ROOT) && $(PYTHON) -m harness.runner \
+		--benchmark locomo --tool no-memory --track open \
+		--sample locomo-s300-seed42 --dry-run
+
+run-plainfile-dry: ## Run the plainfile baseline in dry-run mode (no API calls)
+	@echo "Running plainfile baseline (dry-run)..."
+	cd $(REPO_ROOT) && $(PYTHON) -m harness.runner \
+		--benchmark locomo --tool plainfile --track open \
+		--sample locomo-s300-seed42 --dry-run
 
 run-canary: ## Run the no-memory canary (requires API key for answering model)
 	@echo "Running no-memory canary..."
