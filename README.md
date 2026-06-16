@@ -12,11 +12,14 @@ landscape shifts, and (as they land) independent benchmark results from the
 
 ## How to use this repo
 
+![Landscape](assets/landscape-2026-06.png)
+
 | You want… | Go to |
 |-----------|-------|
 | The state of the landscape right now | The latest file in [`editions/`](editions/) |
 | Everything we know about one tool | [`tools/<name>.md`](tools/) |
 | Machine-readable roster + metadata | [`data/`](data/) |
+| Architecture diagrams + latency charts | [`architecture.md`](architecture.md) |
 | How tools are tested and ranked | [Methodology](#methodology) below |
 
 ## The roster
