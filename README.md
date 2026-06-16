@@ -24,6 +24,11 @@ landscape shifts, and (as they land) independent benchmark results from the
 | How tools are tested and ranked | [`methodology.md`](methodology.md) |
 | Vendor claims vs. independent reproduction | [`published-vs-reproduced.md`](published-vs-reproduced.md) |
 | The benchmark harness code | [`harness/`](harness/) |
+| **Project intent, philosophy & design principles** | **[`INTENT.md`](INTENT.md)** |
+| **Implementation guide, how to add tools, data pipeline** | **[`IMPLEMENTATION.md`](IMPLEMENTATION.md)** |
+| **Testing methodology summary & reproducibility** | **[`TESTING.md`](TESTING.md)** |
+| **Troubleshooting, debugging, FAQ** | **[`TROUBLESHOOTING.md`](TROUBLESHOOTING.md)** |
+| **How to contribute, challenge rankings, fix data** | **[`CONTRIBUTING.md`](CONTRIBUTING.md)** |
 
 ## The roster
 
