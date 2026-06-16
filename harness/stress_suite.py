@@ -294,7 +294,7 @@ SCENARIOS = {
 }
 
 
-def run_stress_suite(adapter: MemoryAdapter, scenarios: list[str] | None = None) -> list[StressResult]:
+def run_stress_suite(adapter: MemoryAdapter, scenarios: Optional[list[str]] = None) -> list[StressResult]:
     """Run selected stress scenarios. Defaults to all."""
     if scenarios is None:
         scenarios = list(SCENARIOS.keys())

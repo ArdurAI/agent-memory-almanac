@@ -13,7 +13,7 @@ SHA-256: (computed at release)
 """
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Optional
 from dataclasses import dataclass, field
 import time
 
@@ -23,7 +23,7 @@ class AdapterResult:
     """Standardized result from any adapter operation."""
     success: bool
     elapsed_sec: float
-    error: str | None = None
+    error: Optional[str] = None
     metadata: dict = field(default_factory=dict)
 
 

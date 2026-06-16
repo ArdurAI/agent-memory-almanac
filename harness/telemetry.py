@@ -21,16 +21,16 @@ class CallTelemetry:
     """Telemetry for a single adapter or model call."""
     call_id: str
     method: str  # "add", "await_ingest", "search", "answer", "judge"
-    tool: str | None  # None for model calls
+    tool: Optional[str]  # None for model calls
     start_time: float
     end_time: float
     tokens_prompt: int = 0
     tokens_completion: int = 0
     tokens_total: int = 0
     cost_usd: float = 0.0
-    model: str | None = None  # for model calls
+    model: Optional[str] = None  # for model calls
     status: str = "ok"  # "ok", "error", "timeout"
-    error_message: str | None = None
+    error_message: Optional[str] = None
     metadata: dict = field(default_factory=dict)
 
     @property
@@ -60,10 +60,10 @@ class TelemetryCollector:
         self._call_counter += 1
         return f"{self.run_id}-{self._call_counter:04d}"
 
-    def record(self, method: str, tool: str | None, start: float, end: float,
+    def record(self, method: str, tool: Optional[str], start: float, end: float,
                tokens_prompt: int = 0, tokens_completion: int = 0,
-               model: str | None = None, status: str = "ok",
-               error_message: str | None = None, metadata: dict | None = None) -> CallTelemetry:
+               model: Optional[str] = None, status: str = "ok",
+               error_message: Optional[str] = None, metadata: Optional[dict] = None) -> CallTelemetry:
         call = CallTelemetry(
             call_id=self._next_id(),
             method=method,
@@ -82,12 +82,16 @@ class TelemetryCollector:
         self.calls.append(call)
         return call
 
-    def _compute_cost(self, model: str | None, prompt_tokens: int, completion_tokens: int) -> float:
+    def _compute_cost(self, model: Optional[str], prompt_tokens: int, completion_tokens: int) -> float:
         if model is None or model not in PRICING:
             return 0.0
         p = PRICING[model]
         cost = (prompt_tokens * p["prompt"] + completion_tokens * p["completion"]) / 1_000_000
         return round(cost, 6)
+
+    def record_call(self, method: str, tool: Optional[str], model: Optional[str] = None):
+        """Return a context manager for instrumenting a single call."""
+        return TelemetryContext(self, method, tool, model)
 
     def summary(self) -> dict:
         """Aggregate telemetry into a run-level summary."""
@@ -140,8 +144,8 @@ class TelemetryCollector:
 
 class TelemetryContext:
     """Context manager for instrumenting a single call."""
-    def __init__(self, collector: TelemetryCollector, method: str, tool: str | None,
-                 model: str | None = None):
+    def __init__(self, collector: TelemetryCollector, method: str, tool: Optional[str],
+                 model: Optional[str] = None):
         self.collector = collector
         self.method = method
         self.tool = tool

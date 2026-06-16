@@ -10,7 +10,11 @@ temporal reasoning, no consolidation).
 """
 
 import time
-import numpy as np
+try:
+    import numpy as np
+    HAVE_NUMPY = True
+except ImportError:
+    HAVE_NUMPY = False
 from typing import Optional
 from harness.adapter import MemoryAdapter, AdapterResult
 
@@ -56,7 +60,7 @@ class NaiveRAGAdapter(MemoryAdapter):
 
     def search(self, query: str, k: int = 5) -> AdapterResult:
         t0 = time.perf_counter()
-        if not self.chunks or not self.model or not HAVE_ST:
+        if not self.chunks or not self.model or not HAVE_ST or not HAVE_NUMPY:
             return AdapterResult(success=True, elapsed_sec=0.0, metadata={"excerpts": []})
 
         query_emb = self.model.encode([query], normalize_embeddings=True)
