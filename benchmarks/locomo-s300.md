@@ -73,20 +73,39 @@ metadata; they are never merged or compared head-to-head with main-track rows
 The open track ran its own canary first: no-memory scored 0.000 answerable /
 1.000 abstention — same leak-free profile as the main track.
 
-| Tool | Tier | Answerable (cat 1–4) | Abstention | Overall | Status |
-|------|------|---------------------|------------|---------|--------|
-| no-memory (canary) | C | 0.000 | 1.000 | 0.223 | ✅ |
-| plainfile | C | 0.249 | 0.910 | 0.397 | ✅ |
-| obsidian | C | **0.309** | 0.896 | **0.440** | ✅ |
-| naive-rag | C | | | | running |
-| basic-memory · openmemory · mcp-knowledge-graph · memori · memvid · full-context | B/A/C | | | | queued |
+**5 of 10 tools in** (cheap tier; extraction-heavy Tier A still queued). The
+first real result worth its salt: **basic-memory clears the naive-RAG baseline**
+— the bar a memory tool must beat to justify its machinery.
 
-Per-category (answerable) so far:
+### OPEN track — results
+
+| Tool | Tier | Answerable | Abstention | Overall | Graded (det/llm) | Judge |
+|------|------|-----------|------------|---------|------------------|-------|
+| basic-memory | B | 0.335 | 0.881 | 0.457 | 216/84 | qwen3.5:397b |
+| obsidian | C | 0.309 | 0.895 | 0.440 | 212/88 | qwen3.5:397b |
+| naive-rag | C | 0.300 | 0.895 | 0.433 | 224/76 | qwen3.5:397b |
+| plainfile | C | 0.249 | 0.910 | 0.397 | 233/67 | qwen3.5:397b |
+| no-memory | C | 0.000 | 1.000 | 0.223 | 300/0 | qwen3.5:397b |
+
+Still running: openmemory, mcp-knowledge-graph, memori, memvid, full-context,
+then the extraction-heavy Tier A batch.
+
+### OPEN track — per category (answerable)
 
 | Tool | multi-hop | temporal | open-domain | single-hop |
 |------|-----------|----------|-------------|------------|
-| plainfile | 0.093 | **0.000** | 0.133 | 0.409 |
-| obsidian | 0.023 | **0.375** | 0.133 | 0.402 |
+| basic-memory | 0.116 | 0.229 | 0.067 | 0.480 |
+| obsidian | 0.023 | 0.375 | 0.133 | 0.402 |
+| naive-rag | 0.140 | 0.000 | 0.200 | 0.480 |
+| plainfile | 0.093 | 0.000 | 0.133 | 0.409 |
+| no-memory | 0.000 | 0.000 | 0.000 | 0.000 |
+
+The temporal column keeps telling the same story: the three tools that put
+timestamps where the answering model can see them (obsidian, basic-memory, and
+later the graph/profile tools) score on temporal questions; the two that bury
+timestamps in metadata (plainfile, naive-rag) score 0.000. Answerer/judge are
+deepseek-v4-pro / qwen3.5:397b via Ollama Cloud; main-track Claude numbers
+land separately.
 
 ### Finding: timestamp visibility is worth ~37 temporal points by itself
 

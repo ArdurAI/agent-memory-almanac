@@ -1,9 +1,9 @@
 {
  "bench": "locomo",
  "track": "open",
- "sample": "locomo-s300-seed42",
  "tool": "no-memory",
- "date": "2026-06-10",
+ "sample": "locomo-s300-seed42",
+ "run_dir": "results/locomo-no-memory-open-1781056238",
  "answer_model": "ollama-cloud:deepseek-v4-pro",
  "judge": {
   "transport": "ollama-cloud",
@@ -13,6 +13,7 @@
  "deterministic": 300,
  "llm_judged": 0,
  "answerable_accuracy": 0.0,
+ "abstention_accuracy": 1.0,
  "overall": 0.2233,
  "by_category": {
   "1": {

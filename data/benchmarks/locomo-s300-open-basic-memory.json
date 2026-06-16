@@ -1,0 +1,47 @@
+{
+ "bench": "locomo",
+ "track": "open",
+ "tool": "basic-memory",
+ "sample": "locomo-s300-seed42",
+ "run_dir": "results/locomo-basic-memory-open-1781070661",
+ "answer_model": "ollama-cloud:deepseek-v4-pro",
+ "judge": {
+  "transport": "ollama-cloud",
+  "model": "qwen3.5:397b"
+ },
+ "graded": 300,
+ "deterministic": 216,
+ "llm_judged": 84,
+ "answerable_accuracy": 0.3348,
+ "abstention_accuracy": 0.8806,
+ "overall": 0.4567,
+ "by_category": {
+  "1": {
+   "n": 43,
+   "accuracy": 0.1163
+  },
+  "2": {
+   "n": 48,
+   "accuracy": 0.2292
+  },
+  "3": {
+   "n": 15,
+   "accuracy": 0.0667
+  },
+  "4": {
+   "n": 127,
+   "accuracy": 0.4803
+  },
+  "5": {
+   "n": 67,
+   "accuracy": 0.8806
+  }
+ },
+ "failure_modes": {
+  "missing_recall": 103,
+  "none": 37,
+  "wrong_fact": 9,
+  "wrong_abstention": 8,
+  "partial": 6
+ }
+}
